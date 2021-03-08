@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	resource "github.com/logsquaredn/static-resource"
@@ -43,27 +42,24 @@ func (r *StaticResource) In() error {
 
 	resp.Version = *version
 
-	keys := reflect.ValueOf(req.Source)
-
-	for i := 0; i < keys.NumField(); i++ {
-		obj := keys.Field(i).Interface()
+	for key, value := range req.Source {
 		var data []byte
 		if strings.EqualFold(req.Params.Format, "yaml") || strings.EqualFold(req.Params.Format, "yml") {
-			data, err = yaml.Marshal(obj)
+			data, err = yaml.Marshal(value)
 			if err != nil && req.Params.Reveal {
-				return fmt.Errorf("unable to marshal yml %s", obj)
+				return fmt.Errorf("unable to marshal yml %s", value)
 			} else if err != nil {
 				return fmt.Errorf("unable to marshal yml")
 			}
-		} else { // strings.EqualFold(req.Params.Format, "json"
-			data, err = json.Marshal(obj)
+		} else if strings.EqualFold(req.Params.Format, "json") {
+			data, err = json.MarshalIndent(value, "", "	")
 			if err != nil {
-				return fmt.Errorf("unable to marshal json %s", obj)
+				return fmt.Errorf("unable to marshal json %s", value)
 			} else if err != nil {
 				return fmt.Errorf("unable to marshal json")
 			}
-		}
-		ioutil.WriteFile(filepath.Join(src, keys.Type().Field(i).Name), data, 0644)
+		} // else { // strings.EqualFold(req.Params.Format, "json") }
+		ioutil.WriteFile(filepath.Join(src, key), data, 0644)
 	}
 
 	r.writeMetadata(resp.Metadata)

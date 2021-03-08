@@ -40,7 +40,7 @@ type OutResponse struct {
 }
 
 // Source ...
-type Source interface {}
+type Source map[string]interface {}
 
 // GetParams are additional parameters that can be passed to this Concourse Resource Type during a get step
 type GetParams struct {
