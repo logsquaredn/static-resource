@@ -1,0 +1,219 @@
+resource_types:
+- name: discord-notification-resource
+  type: registry-image
+  source:
+    repository: logsquaredn/discord-notification-resource
+    tag: alpine
+
+- name: static-resource
+  type: registry-image
+  source:
+    repository: logsquaredn/static-resource
+    tag: alpine
+
+
+
+resources:
+- name: static-resource
+  type: git
+  icon: github
+  check_every: 2m
+  source:
+    uri: https://github.com/logsquaredn/static-resource/
+    branch: main
+
+- name: static-resource-image-alpine
+  type: docker-image
+  icon: docker
+  check_every: 9999h
+  source: 
+    username: ((docker_username))
+    password: ((docker_password))
+    repository: logsquaredn/static-resource
+    tag: alpine
+
+- name: static-resource-image-ubuntu
+  type: docker-image
+  icon: docker
+  check_every: 9999h
+  source:
+    username: ((docker_username))
+    password: ((docker_password))
+    repository: logsquaredn/static-resource
+
+- name: static-resource-test
+  type: static-resource
+  icon: test-tube
+  check_every: 2m
+  source:
+    json:
+      greeting: hey
+    yml:
+      greeting: hi
+    raw: hello
+
+- name: version
+  type: semver
+  icon: tag
+  check_every: 9999h
+  source:
+    initial_version: 0.0.1
+    driver: s3
+    bucket: resource-types
+    key: static-resource/version
+    access_key_id: ((s3_access_key_id))
+    secret_access_key: ((s3_secret_access_key))
+    region_name: us-east-2
+
+- name: notify
+  type: discord-notification-resource
+  icon: discord
+  check_every: 9999h
+  source:
+    webhook_id: ((discord_webhook_id))
+    token: ((discord_webhook_token))
+
+
+
+anchors:
+- &default_job_config
+  build_log_retention:
+    builds: 12
+    minimum_succeeded_builds: 3
+  serial: true
+  on_failure:
+    put: notify
+    params:
+      content: static-resource; job failed
+      wait: true
+
+
+
+groups:
+- name: build-resource
+  jobs:
+  - build-static-resource-image-alpine
+  - build-static-resource-image-ubuntu
+
+- name: test-resource
+  jobs:
+  - get-static
+
+- name: all
+  jobs:
+  - update-pipeline
+  - build-static-resource-image-alpine
+  - build-static-resource-image-ubuntu
+  - bump-version
+  - get-static
+
+
+
+jobs:
+- name: update-pipeline
+  <<: *default_job_config
+  plan:
+  - get: static-resource
+    trigger: true
+
+  - set_pipeline: self
+    file: static-resource/cicd/pipelines/static-resource.yml
+
+
+- name: build-static-resource-image-alpine
+  <<: *default_job_config
+  plan:
+  - in_parallel:
+    - get: static-resource
+      passed:
+      - update-pipeline
+      trigger: true
+
+    - get: version
+
+  - put: static-resource-image-alpine
+    params:
+      build: static-resource/
+      tag_as_latest: false
+      cache: true
+      dockerfile: static-resource/dockerfiles/alpine/Dockerfile
+      tag_file: version/version
+      tag_prefix: alpine-
+      additional_tags: static-resource/dockerfiles/alpine/additional_tags
+    get_params:
+      skip_download: true
+
+
+- name: build-static-resource-image-ubuntu
+  <<: *default_job_config
+  plan:
+  - in_parallel:
+    - get: static-resource
+      passed:
+      - update-pipeline
+      trigger: true
+
+    - get: version
+
+  - put: static-resource-image-ubuntu
+    params:
+      build: static-resource/
+      tag_as_latest: true
+      cache: true
+      dockerfile: static-resource/dockerfiles/ubuntu/Dockerfile
+      tag_file: version/version
+      tag_prefix: ubuntu-
+      additional_tags: static-resource/dockerfiles/ubuntu/additional_tags
+    get_params:
+      skip_download: true
+
+- name: bump-version
+  <<: *default_job_config
+  plan:
+  - in_parallel:
+    - get: version
+      passed:
+      - build-static-resource-image-alpine
+      - build-static-resource-image-ubuntu
+      trigger: true
+
+    - get: static-resource-image-alpine
+      passed:
+      - build-static-resource-image-alpine
+      trigger: true
+
+    - get: static-resource-image-ubuntu
+      passed:
+      - build-static-resource-image-ubuntu
+      trigger: true
+
+  - in_parallel:
+    - put: version
+      params:
+        bump: patch
+    
+    - put: notify
+      params:
+        content: static-resource; new version successful
+
+
+- name: get-static
+  <<: *default_job_config
+  plan:
+  - get: static-resource-test
+    trigger: true
+
+  - task: check-input
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: alpine
+      inputs:
+        - name: static-resource-test
+      run:
+        path: sh
+        args:
+        - -exc
+        - ls; ls -al static-resource-test
