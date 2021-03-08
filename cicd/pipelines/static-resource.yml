@@ -41,16 +41,21 @@ resources:
     password: ((docker_password))
     repository: logsquaredn/static-resource
 
-- name: static-resource-test
+- name: static-resource-test-object
   type: static-resource
   icon: test-tube
   check_every: 2m
   source:
-    json:
+    object:
       greeting: hey
-    yml:
-      greeting: hi
-    raw: hello
+
+- name: static-resource-raw
+  type: static-resource
+  icon: test-tube
+  check_every: 2m
+  source:
+    raw: hi  
+    trim:       hello    
 
 - name: version
   type: semver
@@ -200,8 +205,36 @@ jobs:
 - name: get-static
   <<: *default_job_config
   plan:
-  - get: static-resource-test
-    trigger: true
+  - in_parallel:
+    - get: raw
+      resource: static-resource-test-raw
+      trigger: true
+      params:
+        format: raw
+
+    - get: trim
+      resource: static-resource-test-raw
+      trigger: true
+      params:
+        format: trim
+
+    - get: json
+      resource: static-resource-test-object
+      trigger: true
+      params:
+        format: json
+
+    - get: yml
+      resource: static-resource-test-object
+      trigger: true
+      params:
+        format: yml
+
+    - get: yaml
+      resource: static-resource-test-object
+      trigger: true
+      params:
+        format: yaml
 
   - task: check-input
     config:
@@ -215,5 +248,8 @@ jobs:
       run:
         path: sh
         args:
-        - -exc
-        - ls; ls -al static-resource-test
+        - -c
+        - |
+          ls;
+          ls -al json; ls -al raw; ls -al trim; ls -al yaml; ls -al yml;
+          cat json/object.json; cat raw/raw; cat trim/raw; cat yaml/object.yml; cat yml/object.yml;
