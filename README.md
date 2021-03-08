@@ -40,15 +40,15 @@ A map of key-value pairs
 
 ### `check`
 
-not implemented
+returns an array with the hash of the source given to it
 
 ### `in`
 
-| Parameter | Required | Description                                                                                                                             |
-| ----------| -------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `format`  | no       | the format of the file that the static information should be made available through. One of `json`, `raw`, `yaml`, `yml`. Default `raw` |
-| `reveal`  | no       | whether or not to reveal the values in the output. Default `false`                                                               |
+| Parameter | Required | Description                                                                                                                                     |
+| ----------| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`  | no       | the format of the file that the static information should be made available through. One of `json`, `raw`, `trim`, `yaml`, `yml`. Default `raw` |
+| `reveal`  | no       | whether or not to reveal the values in the output. Default `false`                                                     |
 
 ### `out`
 
-not implemented
+returns the hash of the source given to it

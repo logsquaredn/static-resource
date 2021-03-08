@@ -43,23 +43,39 @@ func (r *StaticResource) In() error {
 	resp.Version = *version
 
 	for key, value := range req.Source {
-		var data []byte
-		if strings.EqualFold(req.Params.Format, "yaml") || strings.EqualFold(req.Params.Format, "yml") {
-			data, err = yaml.Marshal(value)
-			if err != nil && req.Params.Reveal {
-				return fmt.Errorf("unable to marshal yml %s", value)
-			} else if err != nil {
-				return fmt.Errorf("unable to marshal yml")
+		switch t := value.(type) {
+		case int, string, bool:
+			if strings.EqualFold(req.Params.Format, "raw") {
+				ioutil.WriteFile(filepath.Join(src, key), []byte(fmt.Sprintf("%s", t)), 0644)
+			} else if strings.EqualFold(req.Params.Format, "trim") {
+				ioutil.WriteFile(filepath.Join(src, key), []byte(strings.Trim(fmt.Sprintf("%s", t), " \t\n")), 0644)
+			} else { // strings.EqualFold(req.Params.Format, "json") or "yaml" or "yml"
+				return fmt.Errorf("format %s doesn't apply to raw types", req.Params.Format)
 			}
-		} else if strings.EqualFold(req.Params.Format, "json") {
-			data, err = json.MarshalIndent(value, "", "	")
-			if err != nil {
-				return fmt.Errorf("unable to marshal json %s", value)
-			} else if err != nil {
-				return fmt.Errorf("unable to marshal json")
+
+		default:
+			if strings.EqualFold(req.Params.Format, "yaml") || strings.EqualFold(req.Params.Format, "yml") {
+				data, err := yaml.Marshal(value)
+				if err != nil && req.Params.Reveal {
+					return fmt.Errorf("unable to marshal yml %s", value)
+				} else if err != nil {
+					return fmt.Errorf("unable to marshal yml")
+				}
+
+				ioutil.WriteFile(filepath.Join(src, key + ".yml"), data, 0644)
+			} else if strings.EqualFold(req.Params.Format, "json") {
+				data, err := json.MarshalIndent(value, "", "	")
+				if err != nil {
+					return fmt.Errorf("unable to marshal json %s", value)
+				} else if err != nil {
+					return fmt.Errorf("unable to marshal json")
+				}
+
+				ioutil.WriteFile(filepath.Join(src, key + ".json"), data, 0644)
+			} else { // strings.EqualFold(req.Params.Format, "raw") or "trim"
+				return fmt.Errorf("format %s doesn't apply to objects or arrays", req.Params.Format)
 			}
-		} // else { // strings.EqualFold(req.Params.Format, "json") }
-		ioutil.WriteFile(filepath.Join(src, key), data, 0644)
+		}
 	}
 
 	r.writeMetadata(resp.Metadata)
