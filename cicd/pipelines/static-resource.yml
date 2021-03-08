@@ -47,15 +47,14 @@ resources:
   check_every: 2m
   source:
     object:
-      greeting: hey
+      greeting: hello there
 
 - name: static-resource-test-raw
   type: static-resource
   icon: test-tube
   check_every: 2m
   source:
-    raw: hi  
-    trim:       hello    
+    raw: hello there
 
 - name: version
   type: semver
@@ -172,6 +171,7 @@ jobs:
     get_params:
       skip_download: true
 
+
 - name: bump-version
   <<: *default_job_config
   plan:
@@ -255,5 +255,8 @@ jobs:
         - -c
         - |
           ls;
-          ls -al json; ls -al raw; ls -al trim; ls -al yaml; ls -al yml;
-          cat json/object.json; cat raw/raw; cat raw/trim; cat trim/raw; cat trim/trim; cat yaml/object.yml; cat yml/object.yml;
+          ls -al json; cat json/object.json;
+          ls -al raw; cat raw/raw;
+          ls -al trim; cat trim/raw;
+          ls -al yaml; cat yaml/object.yml;
+          ls -al yml; cat yml/object.yml;
