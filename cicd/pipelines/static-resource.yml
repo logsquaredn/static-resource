@@ -49,7 +49,7 @@ resources:
     object:
       greeting: hey
 
-- name: static-resource-raw
+- name: static-resource-test-raw
   type: static-resource
   icon: test-tube
   check_every: 2m
