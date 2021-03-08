@@ -206,6 +206,12 @@ jobs:
   <<: *default_job_config
   plan:
   - in_parallel:
+    - get: json
+      resource: static-resource-test-object
+      trigger: true
+      params:
+        format: json
+
     - get: raw
       resource: static-resource-test-raw
       trigger: true
@@ -218,23 +224,17 @@ jobs:
       params:
         format: trim
 
-    - get: json
+    - get: yaml
       resource: static-resource-test-object
       trigger: true
       params:
-        format: json
+        format: yaml
 
     - get: yml
       resource: static-resource-test-object
       trigger: true
       params:
         format: yml
-
-    - get: yaml
-      resource: static-resource-test-object
-      trigger: true
-      params:
-        format: yaml
 
   - task: check-input
     config:
@@ -244,7 +244,11 @@ jobs:
         source:
           repository: alpine
       inputs:
-        - name: static-resource-test
+        - name: json
+        - name: raw
+        - name: trim
+        - name: yaml
+        - name: yml
       run:
         path: sh
         args:
@@ -252,4 +256,4 @@ jobs:
         - |
           ls;
           ls -al json; ls -al raw; ls -al trim; ls -al yaml; ls -al yml;
-          cat json/object.json; cat raw/raw; cat trim/raw; cat yaml/object.yml; cat yml/object.yml;
+          cat json/object.json; cat raw/raw; cat raw/trim; cat trim/raw; cat trim/trim; cat yaml/object.yml; cat yml/object.yml;
