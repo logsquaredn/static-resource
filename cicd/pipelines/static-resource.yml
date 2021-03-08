@@ -258,5 +258,5 @@ jobs:
             ls -al json; cat json/object.json; echo "";
             ls -al raw; cat raw/raw; echo "";
             ls -al trim; cat trim/raw; echo "";
-            ls -al yaml; cat yaml/object.yml; echo "";
+            ls -al yaml; cat yaml/object.yaml; echo "";
             ls -al yml; cat yml/object.yml; echo "";

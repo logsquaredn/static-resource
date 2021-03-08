@@ -54,31 +54,28 @@ func (r *StaticResource) In() error {
 			}
 
 		default:
+			var data []byte
 			if strings.EqualFold(req.Params.Format, "yaml") || strings.EqualFold(req.Params.Format, "yml") {
-				data, err := yaml.Marshal(value)
+				data, err = yaml.Marshal(value)
 				if err != nil && req.Params.Reveal {
 					return fmt.Errorf("unable to marshal yml %s", value)
 				} else if err != nil {
 					return fmt.Errorf("unable to marshal yml")
 				}
-
-				ioutil.WriteFile(filepath.Join(src, key + ".yml"), data, 0644)
 			} else if strings.EqualFold(req.Params.Format, "json") {
-				data, err := json.MarshalIndent(value, "", "	")
+				data, err = json.MarshalIndent(value, "", "	")
 				if err != nil {
 					return fmt.Errorf("unable to marshal json %s", value)
 				} else if err != nil {
 					return fmt.Errorf("unable to marshal json")
 				}
-
-				ioutil.WriteFile(filepath.Join(src, key + ".json"), data, 0644)
 			} else { // strings.EqualFold(req.Params.Format, "raw") or "trim"
 				return fmt.Errorf("format %s doesn't apply to objects or arrays", req.Params.Format)
 			}
+
+			ioutil.WriteFile(filepath.Join(src, key + "." + req.Params.Format), data, 0644)
 		}
 	}
-
-	r.writeMetadata(resp.Metadata)
 
 	r.writeOutput(resp)
 	if err != nil {
