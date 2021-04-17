@@ -21,7 +21,7 @@ RUN set -e; for pkg in $(go list ./...); do \
 		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
 
-FROM ubuntu:bionic AS resource
+FROM base AS resource
 ENV DEBAIN_FRONTEND=noninteractive
 RUN apt-get update
 COPY --from=builder assets/ opt/resource/
